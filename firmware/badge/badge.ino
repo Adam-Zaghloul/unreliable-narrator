@@ -36,7 +36,7 @@ struct __attribute__((packed)) Packet {
 struct __attribute__((packed)) Command { uint8_t magic[2]; uint8_t target; uint8_t cmd; uint16_t ms; };  // cmd 1 = buzz
 // ----------------------------------------------------------------------
 
-const uint8_t BROADCAST[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+const uint8_t BCAST_ADDR[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 const int MAX_PEERS = 16, MAX_SAMPLES = 8;
 
 struct Samples { uint8_t kind, id, count; int8_t rssi[MAX_SAMPLES]; };
@@ -87,6 +87,33 @@ void onRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
   if (c->cmd == 1) buzzUntil = millis() + c->ms;
 }
 
+// Core 4.x builds NimBLE with extended advertising on, which swaps the advertising API.
+// This helper sends a plain legacy, non-connectable advert either way.
+void startAdvertising(const std::string& md, uint16_t minUnits, uint16_t maxUnits) {
+#if CONFIG_BT_NIMBLE_EXT_ADV
+  NimBLEExtAdvertisement ad;
+  ad.setLegacyAdvertising(true);
+  ad.setConnectable(false);
+  ad.setScannable(false);
+  ad.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
+  ad.setManufacturerData(md);
+  ad.setMinInterval(minUnits);
+  ad.setMaxInterval(maxUnits);
+  NimBLEExtAdvertising* adv = NimBLEDevice::getAdvertising();
+  adv->setInstanceData(0, ad);
+  adv->start(0);
+#else
+  NimBLEAdvertisementData ad;
+  ad.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
+  ad.setManufacturerData(md);
+  NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
+  adv->setAdvertisementData(ad);
+  adv->setMinInterval(minUnits);
+  adv->setMaxInterval(maxUnits);
+  adv->start();
+#endif
+}
+
 void setup() {
   Serial.begin(115200);
   pinMode(PIN_TRUE, INPUT_PULLUP);
@@ -97,20 +124,14 @@ void setup() {
   esp_wifi_set_channel(ESPNOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
   if (esp_now_init() != ESP_OK) { Serial.println("esp_now_init failed"); }
   esp_now_peer_info_t peer = {};
-  memcpy(peer.peer_addr, BROADCAST, 6);
+  memcpy(peer.peer_addr, BCAST_ADDR, 6);
   peer.channel = ESPNOW_CHANNEL;
   peer.encrypt = false;
   esp_now_add_peer(&peer);
   esp_now_register_recv_cb(onRecv);
 
   NimBLEDevice::init("");
-  NimBLEAdvertisementData ad;
-  ad.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
-  std::string md = {(char)0xFF, (char)0xFF, 'U', 'N', (char)KIND_BADGE, (char)BADGE_ID};
-  ad.setManufacturerData(md);
-  NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
-  adv->setAdvertisementData(ad);
-  adv->start();
+  startAdvertising(std::string{(char)0xFF, (char)0xFF, 'U', 'N', (char)KIND_BADGE, (char)BADGE_ID}, 320, 352);  // ~200 ms
 
   NimBLEScan* scan = NimBLEDevice::getScan();
   scan->setScanCallbacks(&scanCB, true);  // true = report every advertisement, not just new devices
@@ -152,5 +173,5 @@ void loop() {
     if (snap[i].count == 0) continue;
     pkt.peers[pkt.n++] = {snap[i].kind, snap[i].id, medianOf(snap[i].rssi, snap[i].count)};
   }
-  esp_now_send(BROADCAST, (uint8_t*)&pkt, 7 + pkt.n * sizeof(Peer));
+  esp_now_send(BCAST_ADDR, (uint8_t*)&pkt, 7 + pkt.n * sizeof(Peer));
 }

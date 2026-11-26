@@ -8,7 +8,7 @@ Nobody has to play the villain, and nobody needs a phone. It also produces data 
 
 > **Status (2026-11-26): week 1, simulator only.**
 > - The hub runs end to end against simulated players.
-> - The firmware is written but has **not been compiled or bench-tested**.
+> - The firmware **compiles** for ESP32-C3 but has **not been flashed or bench-tested**.
 > - No real game has been played yet.
 > - Every number below comes from the simulator and is a development check, not a result about people.
 
@@ -81,7 +81,7 @@ A game makes 3 calls of a few thousand tokens each, so it costs cents. `claude-h
 | 400–500 mAh LiPo with TP4056 USB-C charger | 8 |
 | Coin vibration motor, 2N7000, 2 tactile buttons | 8 sets |
 
-Firmware is in [firmware/](firmware/). It targets Arduino-ESP32 core 3.x and NimBLE-Arduino 2.x. **It has not been compiled yet.**
+Firmware is in [firmware/](firmware/). It compiles with Arduino-ESP32 core 3.3.13 and NimBLE-Arduino 2.5.2. Build steps are in [firmware/README.md](firmware/README.md). **It has not been flashed or bench-tested yet.**
 
 ## Known limitations
 

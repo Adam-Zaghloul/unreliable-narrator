@@ -9,17 +9,37 @@
 
 #define ZONE_ID 1  // CHANGE PER BEACON (1..254)
 
-void setup() {
-  NimBLEDevice::init("");
+// Core 4.x builds NimBLE with extended advertising on, which swaps the advertising API.
+// This helper sends a plain legacy, non-connectable advert either way.
+void startAdvertising(const std::string& md, uint16_t minUnits, uint16_t maxUnits) {
+#if CONFIG_BT_NIMBLE_EXT_ADV
+  NimBLEExtAdvertisement ad;
+  ad.setLegacyAdvertising(true);
+  ad.setConnectable(false);
+  ad.setScannable(false);
+  ad.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
+  ad.setManufacturerData(md);
+  ad.setMinInterval(minUnits);
+  ad.setMaxInterval(maxUnits);
+  NimBLEExtAdvertising* adv = NimBLEDevice::getAdvertising();
+  adv->setInstanceData(0, ad);
+  adv->start(0);
+#else
   NimBLEAdvertisementData ad;
   ad.setFlags(BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP);
-  std::string md = {(char)0xFF, (char)0xFF, 'U', 'N', 'B', (char)ZONE_ID};
   ad.setManufacturerData(md);
   NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
   adv->setAdvertisementData(ad);
-  adv->setMinInterval(160);  // 160 * 0.625 ms = 100 ms
-  adv->setMaxInterval(176);  // 110 ms; a little jitter avoids repeated collisions
+  adv->setMinInterval(minUnits);
+  adv->setMaxInterval(maxUnits);
   adv->start();
+#endif
+}
+
+void setup() {
+  NimBLEDevice::init("");
+  // 160 * 0.625 ms = 100 ms; max 110 ms, a little jitter avoids repeated collisions
+  startAdvertising(std::string{(char)0xFF, (char)0xFF, 'U', 'N', 'B', (char)ZONE_ID}, 160, 176);
 }
 
 void loop() { delay(1000); }
