@@ -88,9 +88,9 @@ To run a real game night, see [docs/HOSTING.md](docs/HOSTING.md). It covers setu
 
 | Eval | Question | Result so far |
 |---|---|---|
-| E1 sim · [e1_zone_accuracy](evals/e1_zone_accuracy.py) | Are the facts the narrator uses right? | 99.8% correct in the simulator. Usable facts drop from 70% to 39% as noise rises |
+| E1 sim · [e1_zone_accuracy](evals/e1_zone_accuracy.py) | Are the facts the narrator uses right? | 99.9–100% correct in the simulator. Usable facts drop from 61% to 36% as noise rises |
 | E1 bench · [walk](hub/walk.py) + [e1_bench](evals/e1_bench.py) | The same question on real hardware, against a naive baseline | Needs hardware |
-| E2 · [e2_validator](evals/e2_validator.py) | Is every accepted lie really false, and every truth really true? | 2344/2344 lies and 1438/1439 truths correct. The one miss is a room-boundary error in the truth engine |
+| E2 · [e2_validator](evals/e2_validator.py) | Is every accepted lie really false, and every truth really true? | 1995/1995 lies and 1267/1267 truths correct. Windows next to a room change are excluded, since a player can be half in each room |
 | E3 · [e3_analysis](evals/e3_analysis.py) | Do Claude's lies fool people more than rule-based lies? | Needs real players. The pipeline has been checked on simulated sessions only |
 | E4 · [e4_safety](evals/e4_safety.py) | Can the liar or a player name break the rules? | 0 violations in 41 attacks |
 | E5 · [e5_models](evals/e5_models.py) | Which model is accurate, fast and cheap enough? | Not run yet (costs money) |

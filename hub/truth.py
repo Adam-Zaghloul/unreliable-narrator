@@ -10,7 +10,9 @@ Per player, per 10 s window:
 4. Confidence = share of packets in the window whose own strongest beacon is the chosen zone.
 
 A fact is only usable by the narrator when it is CONFIDENT (>= MIN_CONFIDENCE) and
-STABLE (same confident zone in the previous or next window, i.e. held for >= 20 s).
+STABLE: the same confident zone in the previous or next window (held for >= 20 s), and no
+confident neighbour in a DIFFERENT zone. A window next to a detected room change is where
+the player moved, so it may be half one room and half the other; it is never used.
 """
 from __future__ import annotations
 
@@ -88,11 +90,13 @@ class Truth:
         return bool(e and e.zone and e.confidence >= MIN_CONFIDENCE)
 
     def stable(self, player: str, window: int) -> bool:
-        """Confident here AND the same confident zone in a neighbouring window (held >= 20 s)."""
+        """Confident here, the same confident zone in a neighbouring window (held >= 20 s),
+        and no confident neighbour in another zone (that would make this a transition window)."""
         if not self.confident(player, window):
             return False
         z = self.zone(player, window)
-        return any(self.confident(player, n) and self.zone(player, n) == z for n in (window - 1, window + 1))
+        neighbours = [self.zone(player, n) for n in (window - 1, window + 1) if self.confident(player, n)]
+        return z in neighbours and all(n == z for n in neighbours)
 
     def who_was_in(self, zone: str, window: int) -> list[str]:
         """Players confidently in `zone` during `window` (these are the possible witnesses)."""

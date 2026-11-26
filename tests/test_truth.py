@@ -36,6 +36,15 @@ def test_single_window_is_not_stable():
     assert t.confident("Sara", 0) and not t.stable("Sara", 0)
 
 
+def test_window_next_to_a_room_change_is_not_stable():
+    # kitchen for 20 s, then hallway for 20 s: windows 1 and 2 border the move, so neither is usable
+    p = pings_for("Sara", 0, 20, "B1") + pings_for("Sara", 20, 40, "B2", weak=-90)
+    t = Truth(estimate_zones(p, ZONES))
+    assert [t.zone("Sara", w) for w in range(4)] == ["kitchen", "kitchen", "hallway", "hallway"]
+    assert all(t.confident("Sara", w) for w in range(4))
+    assert not t.stable("Sara", 1) and not t.stable("Sara", 2)
+
+
 def test_other_badges_are_ignored():
     p = pings_for("Sara", 0, 20, "B1") + [Ping("Sara", 1000, "Karim", -30.0)]
     assert Truth(estimate_zones(p, ZONES)).zone("Sara", 0) == "kitchen"

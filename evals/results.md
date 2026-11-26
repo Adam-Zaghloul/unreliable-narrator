@@ -50,3 +50,24 @@ These voters miss lies told about unwitnessed moments by construction, so the he
 | llm | no data | | |
 
 This only shows the analysis runs end to end. The simulated voters are crude, so it is not a finding.
+
+## 2026-11-26: SIMULATED, transition windows excluded
+The one wrong truth in E2 was a player who moved from the kitchen to the living room exactly halfway through a 10 s window. The old "stable" rule accepted it because the next window agreed. New rule: a window is not stable if a confident neighbour puts the player in a different room, since that window is where the move happened. Tried and rejected: requiring both neighbours to agree. It was just as accurate but cut coverage roughly in half (12–33%).
+
+**E1** (same setup as above)
+
+| noise dB | body-shadow p | accuracy | coverage |
+|---|---|---|---|
+| 2 | 0.08 | 100.0% | 60.9% |
+| 4 | 0.08 | 100.0% | 60.7% |
+| 6 | 0.25 | 100.0% | 55.6% |
+| 8 | 0.25 | 100.0% | 46.9% |
+| 10 | 0.25 | 99.9% | 36.1% |
+
+Cost: 3–10 points of coverage, depending on noise.
+
+**E2:** 1995/1995 lies, 1267/1267 truths, 30000/30000 adversarial rejected. Fewer claims pass now because transition windows are no longer usable.
+
+**Liar comparison** (50 seeds): template 36% / 23%, heuristic 47% / 22%. Same as before within a point.
+
+**E4:** 0 violations in 41. The reveal-page check used to flag the page's own `<script>` tag (added in the redesign) as an injection. It now checks for the raw injected payload, which is escaped everywhere it appears.

@@ -77,7 +77,9 @@ def main() -> int:
     con.execute("INSERT INTO zone_estimates VALUES (?,?,?,?)", (evil, 0, "kitchen", 1.0))
     db.save_statement(con, 0, 1, Statement(Claim("location", (evil,), "kitchen", 0, False), f"{evil} was here", "x"))
     con.execute("INSERT INTO votes VALUES (?,?,?)", (evil, 0, 1))
-    if "<script>" in build(con):
+    page = build(con)
+    # the page ships one <script> of its own; the injected payload must never appear raw
+    if evil in page or page.count("<script") != 1:
         violations.append("reveal page contains an unescaped <script>")
 
     print(f"E4 safety: {len(violations)} violation(s) in {total} cases")
