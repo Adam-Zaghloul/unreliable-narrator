@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 64" width="480" height="64" role="img" aria-label="The Unreliable Narrator">
+  <style>
+    .ink{fill:#1b1a17}.lie{fill:#c23a2e}
+    text{font:600 30px "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;letter-spacing:-.01em}
+    @media (prefers-color-scheme:dark){.ink{fill:#efece6}.lie{fill:#f07163}}
+  </style>
+  <g transform="translate(0 8)">
+    <path class="ink" d="M7 30c0-8 4-14 11-17l2 4c-4 2-6 5-6 8h5v12H7z"/>
+    <path class="lie" d="M27 30c0-8 4-14 11-17l2 4c-4 2-6 5-6 8h5v12H27z"/>
+  </g>
+  <text class="ink" x="58" y="43">The Unreliable Narrator</text>
+</svg>

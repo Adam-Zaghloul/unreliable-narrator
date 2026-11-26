@@ -1,103 +1,104 @@
-# The Unreliable Narrator
+<p align="center"><img src="docs/images/logo.svg" alt="The Unreliable Narrator" width="420"></p>
 
-An in-person party game where **the AI narrator is the traitor**.
+<p align="center"><b>An in-person party game where the AI narrator is the traitor, and ESP32 badges hold the truth.</b></p>
 
-Players walk between rooms wearing cheap ESP32 badges. The narrator announces where people were ("At 3:40, Karim was in the living room."), and some of those announcements are deliberate lies meant to turn the group against each other. Players vote TRUE or LIE on their badge. The badges logged where everyone really was, so at the end the log shows every lie and who believed it.
+<p align="center">
+Status: <b>software complete, simulator-tested</b> · firmware compiles · hardware not built yet · no real games played yet
+</p>
 
-Nobody has to play the villain, and nobody needs a phone. It also produces data on a question that has so far been studied mostly in text-only games: **how well do people catch a lying AI when they can check its claims against what physically happened?**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/reveal-dark.png">
+  <img src="docs/images/reveal-light.png" alt="The reveal page at the end of a game: the verdict, then every statement marked TRUE or LIE, with who believed it">
+</picture>
 
-> **Status (2026-11-26): all the software is ready, but nothing has been tested on hardware or with people.**
-> - The full live game loop runs end to end against a **fake gateway**: rounds, badge buzzes, button votes, reveal page and dataset export.
-> - The firmware **compiles** for ESP32-C3 but has **not been flashed or bench-tested**.
-> - No real game has been played yet.
-> - Every number below comes from the simulator and is a development check, not a result about people.
+Players walk between rooms wearing cheap badges. At each meeting the narrator announces where people were, for example *"At 3:40, Karim was in the living room."* Some of those announcements are deliberate lies, chosen to turn the group against each other. Players vote TRUE or LIE on their badge. The badges logged where everyone really was, so the reveal shows every lie and who fell for it.
 
-## Try it (no hardware needed)
+Nobody plays the villain and nobody needs a phone. The game is also an experiment that has so far been run mostly in text-only games: **can people catch a lying AI when they can check its claims against what physically happened?**
+
+## How a game works
+
+| 1. Play | 2. Meeting | 3. Reveal |
+|---|---|---|
+| ![Big screen during play: a countdown and the hint to remember who is in the room when your badge buzzes](docs/images/screen-play.png) | ![Big screen during a meeting: the statement in large type, the vote timer and how many players have voted](docs/images/screen-meeting.png) | ![Timeline of where every player really was, room by room, with one lie highlighted](docs/images/timeline-light.png) |
+| Walk around for a few minutes. Badges buzz at random moments: remember who is with you. | The narrator reads 4 statements. Some are lies. Argue it out, then press TRUE or LIE before the timer ends. | The real log appears. Hover a statement to light up that moment on the timeline. |
+
+Three rounds make a game. Each round uses a different liar (random, rule-based, then Claude), in an order that rotates between games, so the three can be compared fairly.
+
+## Why it's built this way
+
+- **The AI never decides what is true.** Code works out where everyone was. The AI only picks which lies to tell, as structured claims. A validator re-checks every label, and code, not the model, writes the sentence players hear. See [ADR 0001](docs/adr/0001-llm-never-decides-truth.md).
+- **Every lie can be audited.** Every statement, vote and AI call is saved in one SQLite file per game. The reveal is built from that file, so nothing can be hidden.
+- **Lies stay inside the game.** Claims can only say where someone was and when. Insinuations like "alone together", claims about what anyone did or said, invented people and real-world places are all rejected. The red-team set ([evals/e4_safety.py](evals/e4_safety.py)) records 0 violations in 41 attacks.
+- **Consent first, phones away.** A consent card is read aloud before every game. Data stays on the host laptop, and published data is anonymised and leaves out the raw radio signal. See [docs/HOSTING.md](docs/HOSTING.md).
+- **Honest numbers.** Simulated results are labelled as simulated. Claude has to beat the rule-based liar, not just the random one. If it doesn't, this README will say the AI is decorative.
+
+## The badge
+
+<p align="center"><img src="docs/images/badge.svg" alt="Design drawing of the badge: TRUE and LIE buttons on the front; ESP32-C3, battery and vibration motor inside" width="860"></p>
+
+| Part | Qty | Approx. |
+|---|---|---|
+| ESP32-C3 SuperMini (8 badges, 4 room beacons, 1 gateway, 2 spares) | 15 | CA$60 |
+| 400–500 mAh LiPo + TP4056 USB-C charger | 8 | CA$24 |
+| Coin vibration motor, 2N7000, 2 tactile buttons, lanyard, case | 8 sets | CA$16 |
+
+The firmware is in [firmware/](firmware/). It compiles for the ESP32-C3 with Arduino-ESP32 core 3.3.13 and NimBLE-Arduino 2.5.2, but has **not been flashed yet**.
+
+## Architecture
+
+<p align="center"><img src="docs/images/architecture.svg" alt="Badges and beacons send signal-strength readings via a gateway to the hub. There, the truth engine decides what is true, the liar proposes claims and the validator checks them before the speaker, big screen and reveal page use them." width="900"></p>
+
+**How the truth engine places a player** ([hub/truth.py](hub/truth.py)). For each player, every 10 s:
+
+1. Take the median signal strength (RSSI) per beacon.
+2. Pick the strongest beacon.
+3. Keep the previous room unless the new one is at least 4 dB stronger.
+4. Score a confidence.
+
+The narrator may only use facts that are confident and held for at least 20 s.
+
+| Module | Role |
+|---|---|
+| [hub/live.py](hub/live.py) | The game: play phase, witness buzzes, meetings, button votes |
+| [hub/truth.py](hub/truth.py) · [hub/validator.py](hub/validator.py) | Truth from radio signal strength · the gate every claim passes through |
+| [hub/liars.py](hub/liars.py) · [hub/llm.py](hub/llm.py) | Random and rule-based liars · Claude liar (structured output; every call logged with cost) |
+| [hub/screen.py](hub/screen.py) · [hub/reveal.py](hub/reveal.py) | Big-screen page · reveal page (self-contained HTML, works offline) |
+| [hub/transport.py](hub/transport.py) | Real USB gateway, or a fake one driven by the simulator |
+| [hub/walk.py](hub/walk.py) · [hub/export.py](hub/export.py) | Walk-test recorder · anonymised dataset export |
+
+## Try it
+
+You don't need any hardware: the fake gateway plays a whole game with simulated players.
 
 ```sh
 uv venv -p python3.12 .venv && uv pip install -p .venv anthropic pytest
-.venv/bin/python -m pytest -q                        # 24 tests
-.venv/bin/python -m hub.live --sim                   # full live game vs a fake gateway, opens the reveal page
-.venv/bin/python -m hub.game --seed 3                # quick text-only game
-.venv/bin/python -m hub.game --compare 50            # template vs heuristic liar over 50 seeds
-.venv/bin/python -m evals.e4_safety                  # red-team, must print 0 violations
+.venv/bin/python -m pytest -q                  # 26 tests
+.venv/bin/python -m hub.live --sim             # full game, opens the reveal page
+.venv/bin/python -m hub.screen                 # big screen: /?demo=play, /?demo=meeting, /?demo=over
+.venv/bin/python -m evals.e4_safety            # red-team: must print 0 violations
 ```
 
-Running a real game night (setup, rules and consent card) is covered in [docs/HOSTING.md](docs/HOSTING.md).
+The Claude liar needs Anthropic credentials (`ANTHROPIC_API_KEY` or `ant auth login`). The model is set by `NARRATOR_MODEL` (default `claude-opus-5-5`). A game makes 3 calls, so it costs cents.
 
-**Using Claude as the liar:** the `llm` liar needs Anthropic credentials (`ANTHROPIC_API_KEY`, or `ant auth login`). Without them, the round falls back to the template liar. Those statements are marked `template-fill` and excluded from the E3 analysis, so the AI never gets credit for statements it didn't make.
+Without credentials, that round is filled by the random liar. Those statements are marked `template-fill`, and the analysis never credits them to Claude.
 
-## How it works
-
-```
-[player badges] --BLE scan of zone beacons, 2 buttons, vibration motor
-      | ESP-NOW, 1 packet / 2 s
-[zone beacons]  --one per room, advertise only
-[gateway ESP32] --USB serial JSON--> [hub, Python]
-                                       ingest.py    serial -> SQLite
-                                       truth.py     who was where, per 10 s window (deterministic)
-                                       liars.py     template / heuristic liars (baselines)
-                                       llm.py       Claude proposes lies as structured JSON
-                                       validator.py recomputes every label, renders the spoken text
-                                       rounds.py    one round: liar -> validator -> fixed lie/truth mix
-                                       live.py      real game: play phase, witness buzzes, button votes
-                                       reveal.py    self-contained HTML reveal page
-                                       export.py    anonymised JSONL dataset (no raw RSSI)
-                                       walk.py      scripted-walk recorder for the real E1
-                                       game.py      quick simulator-only game + liar comparison
-```
-
-**Design rule: the AI never decides what is true.**
-- Code computes the truth.
-- The liar only proposes structured claims labelled `is_lie`.
-- The validator rejects any claim whose label disagrees with the log, or that rests on an uncertain reading.
-- Code, not the model, renders the sentence players hear. See [docs/adr/0001-llm-never-decides-truth.md](docs/adr/0001-llm-never-decides-truth.md).
-
-**How a position becomes a usable fact**, for each player and each 10 s window ([hub/truth.py](hub/truth.py)):
-1. Take the median RSSI per beacon.
-2. Pick the strongest beacon.
-3. Apply hysteresis: keep the previous room unless the new one is at least 4 dB stronger.
-4. Compute a confidence: the share of packets that agree with that room.
-
-The narrator may only use a fact that is confident (≥ 0.8) **and** held for at least 20 s.
-
-**Claims are limited to where someone was.** Allowed claims are "X was in room R", "X and Y were both in room R" and "X was not in room R". "Alone together" claims are banned, and so is anything about what someone did, said or felt.
+To run a real game night, see [docs/HOSTING.md](docs/HOSTING.md). It covers setup, the walk test, the rules and the consent card.
 
 ## Evals
 
-| Eval | What it checks | Simulated result (2026-11-26) |
+| Eval | Question | Result so far |
 |---|---|---|
-| E1 zone accuracy (`python -m evals.e1_zone_accuracy`) | Accuracy of the facts the narrator may use, and how many player-windows it can use (coverage), at different noise levels | 99.8–99.9% accurate. Coverage falls from 70% to 39% as noise rises from 2 to 10 dB with heavy body shadowing |
-| E2 validator (`python -m evals.e2_validator`) | 300 logs. Accepted lies are really lies, accepted truths are really true, and adversarial claims are rejected | 2344/2344 lies correct. **1438/1439** truths correct: the one miss is a truth-engine error at a room boundary, not a validator bug. 30000/30000 adversarial claims rejected |
-| Liar comparison (`python -m hub.game --compare 50`) | Share of lies believed, and share of true statements rejected | Template 37% / 23%, heuristic 47% / 22%. **Circular:** the simulated voters are built to miss lies told about moments nobody witnessed, which is exactly what the heuristic exploits |
-| E1 bench (`python -m hub.walk`, then `python -m evals.e1_bench`) | The same check on real hardware, against a baseline that just takes the strongest reading | Ready to run; needs hardware |
-| E3 headline (`python -m evals.e3_analysis sessions/*.db`) | Template vs heuristic vs LLM lies, judged by real people. Rounds are counterbalanced, and confidence intervals come from resampling whole sessions | Pipeline checked on 6 simulated sessions only. The LLM liar has to beat the **heuristic**, not just the random liar, or the AI is decorative and this README will say so |
-| E4 safety (`python -m evals.e4_safety`) | 41 attacks: banned claim types, injected names, invented places, mislabelled lies, HTML in names | **0 violations** |
-| E5 models (`python -m evals.e5_models --yes`) | Validator pass rate, latency and cost per model | Not run (billed) |
+| E1 sim · [e1_zone_accuracy](evals/e1_zone_accuracy.py) | Are the facts the narrator uses right? | 99.8% correct in the simulator. Usable facts drop from 70% to 39% as noise rises |
+| E1 bench · [walk](hub/walk.py) + [e1_bench](evals/e1_bench.py) | The same question on real hardware, against a naive baseline | Needs hardware |
+| E2 · [e2_validator](evals/e2_validator.py) | Is every accepted lie really false, and every truth really true? | 2344/2344 lies and 1438/1439 truths correct. The one miss is a room-boundary error in the truth engine |
+| E3 · [e3_analysis](evals/e3_analysis.py) | Do Claude's lies fool people more than rule-based lies? | Needs real players. The pipeline has been checked on simulated sessions only |
+| E4 · [e4_safety](evals/e4_safety.py) | Can the liar or a player name break the rules? | 0 violations in 41 attacks |
+| E5 · [e5_models](evals/e5_models.py) | Which model is accurate, fast and cheap enough? | Not run yet (costs money) |
 
-Details and run notes: [evals/results.md](evals/results.md).
-
-## Cost
-
-Every Claude call is logged to the session database: model, tokens, latency and estimated $. The model is set by `NARRATOR_MODEL` and defaults to `claude-opus-5-5`.
-
-A game makes 3 calls of a few thousand tokens each, so it costs cents. `claude-haiku-5-5` costs a small fraction of that and is the model to compare against in E5. If a call fails or is refused, the template liar fills in for that round so the game never stalls.
-
-## Hardware (planned, about CA$100)
-
-| Item | Qty |
-|---|---|
-| ESP32-C3 SuperMini | 15 (8 badges, 4 beacons, 1 gateway, 2 spares) |
-| 400–500 mAh LiPo with TP4056 USB-C charger | 8 |
-| Coin vibration motor, 2N7000, 2 tactile buttons | 8 sets |
-
-Firmware is in [firmware/](firmware/). It compiles with Arduino-ESP32 core 3.3.13 and NimBLE-Arduino 2.5.2. Build steps are in [firmware/README.md](firmware/README.md). **It has not been flashed or bench-tested yet.**
+Run notes: [evals/results.md](evals/results.md). The images in this README are generated from real code paths by [scripts/make_images.py](scripts/make_images.py). The game they show used simulated players.
 
 ## Known limitations
 
-- Everything so far is simulated. The RSSI model is a guess until it is checked against bench data.
-- Body shadowing and room boundaries are the main sources of error in real RSSI. The simulator models them only roughly.
-- The simulated voters are crude, so they can't tell you whether one liar is better than another. Only real players can.
-- Badges are named `P<id>` until `players.json` maps them to names.
-- The gateway, badge buttons and buzz motor have only been tested through the fake gateway.
-- The Ctrl+C safe word ends the game. There is no pause-and-resume.
+- Everything is simulated so far. The signal-strength model is a guess until it's checked against bench data.
+- The simulated voters are crude. Only real players can show whether one liar beats another.
+- Ctrl+C ends the game; there is no pause-and-resume.

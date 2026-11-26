@@ -70,7 +70,7 @@ def test_reveal_and_export_and_e3(tmp_path):
         con.close()
         paths.append(str(path))
     page = build(sqlite3.connect(paths[0]))
-    assert "What really happened" in page and "LIE" in page and "simulated players" in page
+    assert "Every statement" in page and "Lie</span>" in page and "Simulated players" in page
     recs = session_records(__import__("pathlib").Path(paths[0]))
     names = {r.get("voter") for r in recs if r["type"] == "vote"}
     assert names and all(n.startswith("P") for n in names)  # anonymised
