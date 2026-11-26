@@ -13,7 +13,7 @@ uv pip install -p .venv pyserial
 ```
 Read the consent card aloud and get a yes from everyone before you type `YES`.
 
-**Big screen:** the game prints a local address (`http://127.0.0.1:8765`). Open it full-screen on a TV or a second laptop the players can see. It shows the round timer, each statement in large type, the vote countdown and *how many* players have voted, never what they voted. Use `--no-screen` to turn it off.
+**Big screen:** the game prints a local address (`http://127.0.0.1:8765`). Open it full-screen on the host laptop and mirror that to a TV the players can see. It only listens on this laptop, so other devices can't open it. It shows the round timer, each statement in large type, the vote countdown and *how many* players have voted, never what they voted. Use `--no-screen` to turn it off.
 
 **Liars by round:** the narrator uses a different liar each round: random, rule-based, then Claude. The order comes from `session`. Add 1 to `session` for every new game so the order rotates.
 
