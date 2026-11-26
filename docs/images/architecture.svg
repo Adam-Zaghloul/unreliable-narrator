@@ -1,60 +1,161 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" width="960" height="430" role="img" aria-labelledby="t d">
-  <title id="t">System architecture</title>
-  <desc id="d">Badges and room beacons talk over Bluetooth; badges send packets to a gateway over ESP-NOW; the gateway feeds the hub over USB. In the hub, the truth engine decides what is true, the liar proposes claims, and the validator checks every claim before the speaker, big screen and reveal page use it.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" width="1200" height="760" role="img" aria-labelledby="t d">
+  <title id="t">The Unreliable Narrator, system schematic, sheet 1 of 1</title>
+  <desc id="d">Drawn as an electrical schematic. Room beacons advertise over Bluetooth; each player badge measures their signal strength, reads a TRUE and a LIE push-button and drives a vibration motor through a 2N7000; badges send packets over ESP-NOW to a gateway, which feeds the hub over USB. In the hub, the truth engine computes where everyone was; a three-position switch selects the liar (random, rule-based or Claude); the validator, drawn as an AND gate in red, only passes a claim that agrees with the truth engine. Its output drives the speaker, the big screen, the reveal page and the SQLite log.</desc>
   <style>
-    .bg{fill:#ffffff}.box{fill:#faf9f6;stroke:#d9d4c7;stroke-width:1.5}.hub{fill:#f5f3ee;stroke:#d9d4c7;stroke-width:1.5}
-    .key{fill:#fff4f2;stroke:#c23a2e;stroke-width:1.5}.ok{fill:#eef6f1;stroke:#1f7047;stroke-width:1.5}
-    text{font:15px ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;fill:#1b1a17}
-    .s{font-size:12.5px;fill:#6b675e}.h{font-weight:650}.cap{font-size:11px;letter-spacing:.12em;fill:#6b675e;font-weight:650}
-    .ln{stroke:#6b675e;stroke-width:1.5;fill:none}.arr{fill:#6b675e}
+    .paper{fill:#f2ecdf}.ink{stroke:#1f1c19}.fi{fill:#1f1c19}.red{stroke:#cf2e25}.fr{fill:#cf2e25}.mute{fill:#6f675b}.rule{stroke:#cbbfa9}
+    .w{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    .thin{stroke-width:1}.box{fill:#f7f2e7}
+    text{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;letter-spacing:.06em;fill:#1f1c19}
+    .ref{font-weight:700;font-size:12.5px}.big{font-size:13px;font-weight:700;letter-spacing:.12em}
+    .serif{font-family:"Iowan Old Style",Palatino,Georgia,serif;letter-spacing:0;font-size:15px}
+    .s{font-size:10px;fill:#6f675b}.rt{fill:#cf2e25}
     @media (prefers-color-scheme:dark){
-      .bg{fill:#161513}.box{fill:#1f1e1b;stroke:#3a3732}.hub{fill:#1b1a18;stroke:#3a3732}
-      .key{fill:#2c1a17;stroke:#f07163}.ok{fill:#16271c;stroke:#62c08a}
-      text{fill:#efece6}.s,.cap{fill:#a39e93}.ln{stroke:#a39e93}.arr{fill:#a39e93}}
+      .paper{fill:#1a1815}.ink{stroke:#ece3d1}.fi{fill:#ece3d1}.red{stroke:#ff5e4f}.fr{fill:#ff5e4f}.mute{fill:#a39a89}
+      .rule{stroke:#433d35}.box{fill:#221f1b}text{fill:#ece3d1}.s{fill:#a39a89}.rt{fill:#ff5e4f}}
   </style>
-  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0 0L10 5L0 10z" class="arr"/></marker></defs>
-  <rect class="bg" width="960" height="430" rx="14"/>
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" values="0 0 0 0 .5  0 0 0 0 .45  0 0 0 0 .38  0 0 0 .16 0"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+    <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 1L9 5L0 9z" class="fi"/></marker>
+    <g id="ant"><path class="w ink" d="M0 0v-26M-9 -26l9 12l9 -12z"/></g>
+    <g id="gnd"><path class="w ink" d="M0 0v8M-9 8h18M-5.5 12h11M-2 16h4"/></g>
+    <g id="pb"><path class="w ink" d="M-22 0h12M10 0h12M-12 -9h24M0 -9v-8M-6 -17h12"/><circle class="fi" cx="-10" cy="0" r="2.2"/><circle class="fi" cx="10" cy="0" r="2.2"/></g>
+  </defs>
 
-  <text class="cap" x="32" y="40">IN THE ROOM</text>
-  <rect class="box" x="32" y="56" width="190" height="78" rx="10"/>
-  <text class="h" x="50" y="86">Room beacons</text><text class="s" x="50" y="108">1 per room · BLE advert</text>
-  <rect class="box" x="32" y="160" width="190" height="96" rx="10"/>
-  <text class="h" x="50" y="190">Player badges</text><text class="s" x="50" y="212">scan beacons · TRUE / LIE</text>
-  <text class="s" x="50" y="231">buttons · buzz motor</text>
-  <rect class="box" x="32" y="290" width="190" height="78" rx="10"/>
-  <text class="h" x="50" y="320">Gateway</text><text class="s" x="50" y="342">ESP-NOW → USB serial</text>
-  <path class="ln" d="M127 134v26" marker-end="url(#a)"/>
-  <path class="ln" d="M127 256v34" marker-end="url(#a)"/>
-  <text class="s" x="136" y="151">RSSI</text><text class="s" x="136" y="278">every 2 s</text>
+  <rect class="paper" width="1200" height="760"/>
+  <rect width="1200" height="760" filter="url(#grain)" class="paper"/>
 
-  <text class="cap" x="262" y="40">HUB · LAPTOP</text>
-  <rect class="hub" x="262" y="56" width="440" height="342" rx="12"/>
-  <path class="ln" d="M222 329h58" marker-end="url(#a)"/>
-  <rect class="ok" x="282" y="290" width="190" height="78" rx="10"/>
-  <text class="h" x="298" y="320">Truth engine</text><text class="s" x="298" y="342">median · hysteresis · ≥ 20 s</text>
-  <rect class="box" x="282" y="80" width="190" height="96" rx="10"/>
-  <text class="h" x="298" y="110">Liar</text><text class="s" x="298" y="132">random · rule-based ·</text>
-  <text class="s" x="298" y="151">Claude (structured JSON)</text>
-  <rect class="key" x="492" y="180" width="190" height="104" rx="10"/>
-  <text class="h" x="508" y="210">Validator</text><text class="s" x="508" y="232">re-checks every label</text>
-  <text class="s" x="508" y="251">renders the sentence</text><text class="s" x="508" y="270">rejects banned claims</text>
-  <path class="ln" d="M472 128c40 0 60 20 80 52" marker-end="url(#a)"/>
-  <path class="ln" d="M472 329c40 0 60-15 80-45" marker-end="url(#a)"/>
-  <text class="s" x="488" y="122">proposes claims</text><text class="s" x="476" y="354">decides truth</text>
+  <!-- sheet frame with zone markers -->
+  <rect x="12" y="12" width="1176" height="736" class="w ink"/>
+  <rect x="30" y="30" width="1140" height="700" class="w ink thin"/>
+  <g class="w ink thin">
+    <path d="M220 12v18M410 12v18M600 12v18M790 12v18M980 12v18M220 730v18M410 730v18M600 730v18M790 730v18M980 730v18"/>
+    <path d="M12 205h18M12 380h18M12 555h18M1170 205h18M1170 380h18M1170 555h18"/>
+  </g>
+  <g class="s" text-anchor="middle">
+    <text x="125" y="25">1</text><text x="315" y="25">2</text><text x="505" y="25">3</text><text x="695" y="25">4</text><text x="885" y="25">5</text><text x="1075" y="25">6</text>
+    <text x="125" y="743">1</text><text x="315" y="743">2</text><text x="505" y="743">3</text><text x="695" y="743">4</text><text x="885" y="743">5</text><text x="1075" y="743">6</text>
+    <text x="21" y="122">A</text><text x="21" y="296">B</text><text x="21" y="471">C</text><text x="21" y="646">D</text>
+    <text x="1179" y="122">A</text><text x="1179" y="296">B</text><text x="1179" y="471">C</text><text x="1179" y="646">D</text>
+  </g>
 
-  <text class="cap" x="742" y="40">OUT</text>
-  <rect class="box" x="742" y="80" width="186" height="64" rx="10"/>
-  <text class="h" x="760" y="108">Speaker</text><text class="s" x="760" y="128">reads each statement</text>
-  <rect class="box" x="742" y="170" width="186" height="64" rx="10"/>
-  <text class="h" x="760" y="198">Big screen</text><text class="s" x="760" y="218">timer · votes in</text>
-  <rect class="box" x="742" y="260" width="186" height="64" rx="10"/>
-  <text class="h" x="760" y="288">Reveal page</text><text class="s" x="760" y="308">every lie, who fell for it</text>
-  <path class="ln" d="M682 222c30 0 30-110 58-110" marker-end="url(#a)"/>
-  <path class="ln" d="M682 230h58" marker-end="url(#a)"/>
-  <path class="ln" d="M682 240c30 0 30 52 58 52" marker-end="url(#a)"/>
-  <rect class="box" x="742" y="350" width="186" height="48" rx="10"/>
-  <text class="h" x="760" y="379">SQLite · 1 file/game</text>
+  <!-- U1 beacon -->
+  <text class="ref" x="70" y="72">U1</text><text x="96" y="72">BEACON ×4</text>
+  <rect class="box w ink" x="70" y="82" width="130" height="62"/>
+  <text x="82" y="106">ZONE_ID</text><text class="s" x="82" y="126">BLE ADV 100 ms</text>
+  <path class="w ink" d="M200 113h34"/><use href="#ant" x="234" y="113"/>
 
-  <text class="s" x="282" y="416">The AI never decides what is true. Code does; the AI only chooses which lies to tell.</text>
+  <!-- radio link beacon -> badge -->
+  <path class="w ink thin" stroke-dasharray="2 5" d="M246 92c26 30 26 74 0 108"/>
+  <text class="s" x="276" y="150">BLE · RSSI</text>
+
+  <!-- U2 badge -->
+  <text class="ref" x="70" y="226">U2</text><text x="96" y="226">BADGE ×8</text>
+  <rect class="box w ink" x="70" y="236" width="164" height="168"/>
+  <use href="#ant" x="234" y="236"/>
+  <text x="80" y="262" style="font-weight:700">ESP32-C3</text><g class="s"><text x="80" y="280">BLE SCAN</text><text x="80" y="300">GPIO2</text><text x="80" y="338">GPIO3</text><text x="226" y="376" text-anchor="end">GPIO4</text></g>
+  <text x="152" y="300" class="s">RSSI</text><text x="152" y="314" class="s">MEDIAN</text>
+  <path class="w ink" d="M70 296h-24v190M70 334h-14v152"/>
+  <!-- buttons -->
+  <use href="#pb" x="46" y="508" transform="rotate(90 46 508)"/>
+  <use href="#pb" x="96" y="508" transform="rotate(90 96 508)"/>
+  <path class="w ink" d="M56 486h40v0"/>
+  
+  <use href="#gnd" x="46" y="530"/><use href="#gnd" x="96" y="530"/>
+  <text class="ref" x="22" y="580" style="font-size:11px" transform="translate(22 0)">SW1</text><text class="s" x="44" y="594">TRUE</text>
+  <text class="ref" x="76" y="580" style="font-size:11px" transform="translate(12 0)">SW2</text><text class="rt" x="88" y="594" style="font-size:10px">LIE</text>
+  <!-- motor driver -->
+  
+  <path class="w ink" d="M234 372h22v80"/>
+  <path class="w ink" d="M246 452h10M246 440v24M240 444v16M240 452h-10"/>
+  <path class="w ink" d="M256 440v-14h28M256 464v30"/>
+  <circle class="w ink" cx="300" cy="426" r="16"/><text x="295" y="430" style="font-weight:700">M</text>
+  <path class="w ink" d="M316 426h18v-30h-8"/><text class="s" x="306" y="392">3V3</text>
+  <use href="#gnd" x="256" y="494"/>
+  <text class="ref" x="186" y="474" style="font-size:11px">Q1</text><text class="s" x="186" y="488">2N7000</text>
+  <text class="ref" x="282" y="462" style="font-size:11px">M1</text><text class="s" x="282" y="476">BUZZ</text>
+
+  <!-- ESP-NOW link badge -> gateway -->
+  <path class="w ink thin" stroke-dasharray="2 5" d="M246 214c90-44 230-44 282 6"/>
+  <text class="s" x="318" y="172">ESP-NOW · 1 PKT / 2 s</text>
+
+  <!-- U3 gateway -->
+  <use href="#ant" x="528" y="262"/>
+  <text class="ref" x="420" y="252">U3</text><text x="446" y="252">GATEWAY</text>
+  <rect class="box w ink" x="420" y="262" width="130" height="96"/>
+  <g class="s"><text x="432" y="290">ESPNOW_RX</text><text x="432" y="314">→ JSON</text><text x="432" y="342">BUZZ ←</text></g>
+  <path class="w ink" d="M550 300h36"/><rect class="w ink box" x="586" y="288" width="18" height="24"/><text class="ref" x="578" y="282" style="font-size:11px">J1</text>
+  <text class="s" x="566" y="330">USB</text>
+  <path class="w ink" d="M604 300h56v130h20" marker-end="url(#arr)"/>
+
+  <!-- hub frame -->
+  <rect x="626" y="60" width="536" height="510" class="w ink thin" stroke-dasharray="7 5" fill="none"/>
+  <text class="big" x="656" y="84">HUB · LAPTOP · PYTHON</text>
+
+  <!-- U4 truth engine -->
+  <text class="ref" x="690" y="404">U4</text><text x="716" y="404">TRUTH ENGINE</text>
+  <rect class="box w ink" x="690" y="414" width="160" height="96"/>
+  <g class="s"><text x="702" y="440">MEDIAN RSSI</text><text x="702" y="460">HYST 4 dB</text><text x="702" y="480">CONF ≥ 0.8</text><text x="702" y="500">HELD ≥ 20 s</text></g>
+
+  <!-- SW3 selector + U5 liar -->
+  <text class="ref" x="672" y="122">SW3</text><text x="704" y="122">LIAR SELECT</text>
+  <g class="w ink">
+    <circle cx="700" cy="146" r="3"/><circle cx="700" cy="176" r="3"/><circle cx="700" cy="206" r="3"/>
+    <circle cx="760" cy="176" r="3"/><path d="M757 175L703 205"/><path d="M763 176h37"/>
+  </g>
+  <g class="s"><text x="672" y="150" text-anchor="end" transform="translate(16 0)">RANDOM</text>
+    <text x="688" y="180" text-anchor="end">RULE</text><text x="688" y="210" text-anchor="end" class="rt">CLAUDE</text></g>
+  <text class="ref" x="800" y="134">U5</text><text x="826" y="134">LIAR</text>
+  <rect class="box w ink" x="800" y="144" width="120" height="66"/>
+  <g class="s"><text x="812" y="170">PROPOSES</text><text x="812" y="190">CLAIMS · JSON</text></g>
+
+  <!-- U6 validator AND gate -->
+  <text class="ref rt" x="944" y="236">U6</text><text class="rt" x="970" y="236">VALIDATOR</text>
+  <path class="w red" style="stroke-width:2.2" fill="none" d="M960 250h34a44 44 0 0 1 0 88h-34z"/>
+  <path class="w ink" d="M920 177h20v96h20"/><text class="s" x="948" y="198">CLAIM</text>
+  <path class="w ink" d="M850 462h90v-148h20"/><text class="s" x="896" y="390">TRUTH</text>
+  <path class="w red" style="stroke-width:2.2" d="M1038 294h24"/>
+  <circle class="fr" cx="1062" cy="294" r="3.4"/>
+  <text class="s rt" x="968" y="360">PASSES ONLY IF</text><text class="s rt" x="968" y="374">LABEL = TRUTH</text>
+
+  <!-- outputs -->
+  <path class="w ink" d="M1062 294v-170h12M1062 294v-64h12M1062 294v42h12M1062 294v150h12"/>
+  <circle class="fi" cx="1062" cy="230" r="3"/><circle class="fi" cx="1062" cy="336" r="3"/>
+  <!-- LS1 speaker -->
+  <path class="w ink" d="M1074 114h10v20h-10zM1084 114l14-12v44l-14-12"/><text class="ref" x="1104" y="120" style="font-size:11px">LS1</text><text class="s" x="1104" y="134">VOICE</text>
+  <!-- DS1 screen -->
+  <rect class="w ink box" x="1074" y="214" width="34" height="24"/><path class="w ink" d="M1091 238v8M1082 246h18"/>
+  <text class="ref" x="1112" y="226" style="font-size:11px">DS1</text><text class="s" x="1112" y="240">SCREEN</text>
+  <!-- reveal page -->
+  <path class="w ink box" d="M1074 322h22l8 8v26h-30z"/><path class="w ink thin" d="M1080 336h18M1080 343h18M1080 350h12"/>
+  <text class="ref" x="1110" y="334" style="font-size:11px">P1</text><text class="s" x="1110" y="348">REVEAL</text>
+  <!-- db -->
+  <path class="w ink box" d="M1074 430v24c0 5 30 5 30 0v-24"/><ellipse class="w ink box" cx="1089" cy="430" rx="15" ry="4"/>
+  <text class="ref" x="1110" y="442" style="font-size:11px">DB1</text><text class="s" x="1110" y="456">SQLITE</text>
+  <path class="w ink thin" stroke-dasharray="3 3" d="M850 490h210v-36h14"/>
+
+  <!-- notes -->
+  <text class="big" x="60" y="642">NOTES</text>
+  <g style="font-size:11px">
+    <text x="60" y="664">1. CODE DECIDES WHAT IS TRUE. THE MODEL ONLY PROPOSES CLAIMS (U5).</text>
+    <text x="60" y="682">2. CLAIMS ARE LOCATION-ONLY. BANNED TYPES ARE REJECTED AT U6.</text>
+    <text x="60" y="700">3. ONE SQLITE FILE PER GAME. THE REVEAL IS BUILT FROM IT, NOTHING ELSE.</text>
+  </g>
+
+  <!-- title block -->
+  <g class="w ink">
+    <rect x="790" y="600" width="380" height="130"/>
+    <path class="thin" d="M790 652h380M790 690h380M980 690v40M1080 690v40"/>
+  </g>
+  <text class="s" x="802" y="616">TITLE</text>
+  <text class="serif" x="802" y="640" style="font-size:20px">The Unreliable Narrator · system</text>
+  <text class="s" x="802" y="668">DRAWN</text><text x="860" y="668">A. ZAGHLOUL</text>
+  <text class="s" x="980" y="668">DATE</text><text x="1024" y="668">2026-11-26</text>
+  <text class="s" x="802" y="706">SIZE</text><text x="802" y="722">A3</text>
+  <text class="s" x="992" y="706">REV</text><text x="992" y="722" class="rt" style="font-weight:700">A</text>
+  <text class="s" x="1092" y="706">SHEET</text><text x="1092" y="722">1 / 1</text>
 </svg>

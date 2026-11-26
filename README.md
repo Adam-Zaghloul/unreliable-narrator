@@ -8,7 +8,7 @@ Status: <b>software complete, simulator-tested</b> · firmware compiles · hardw
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/reveal-dark.png">
-  <img src="docs/images/reveal-light.png" alt="The reveal page at the end of a game: the verdict, then every statement marked TRUE or LIE, with who believed it">
+  <img src="docs/images/reveal-light.png" alt="The reveal page, printed in black and red: the verdict, then every statement as the narrator said it, with each lie struck through and the truth written in, stamped TRUE or LIE, and who fell for it">
 </picture>
 
 Players walk between rooms wearing cheap badges. At each meeting the narrator announces where people were, for example *"At 3:40, Karim was in the living room."* Some of those announcements are deliberate lies, chosen to turn the group against each other. Players vote TRUE or LIE on their badge. The badges logged where everyone really was, so the reveal shows every lie and who fell for it.
@@ -19,7 +19,7 @@ Nobody plays the villain and nobody needs a phone. The game is also an experimen
 
 | 1. Play | 2. Meeting | 3. Reveal |
 |---|---|---|
-| ![Big screen during play: a countdown and the hint to remember who is in the room when your badge buzzes](docs/images/screen-play.png) | ![Big screen during a meeting: the statement in large type, the vote timer and how many players have voted](docs/images/screen-meeting.png) | ![Timeline of where every player really was, room by room, with one lie highlighted](docs/images/timeline-light.png) |
+| ![Big screen during play: a countdown and the hint to remember who is in the room when your badge buzzes](docs/images/screen-play.png) | ![Big screen during a meeting: the statement in large type, the vote timer and how many players have voted](docs/images/screen-meeting.png) | ![The surveillance log: where every badge really was in 10-second frames, one print texture per room, with ticks where the narrator spoke and one lie highlighted](docs/images/timeline-light.png) |
 | Walk around for a few minutes. Badges buzz at random moments: remember who is with you. | The narrator reads 4 statements. Some are lies. Argue it out, then press TRUE or LIE before the timer ends. | The real log appears. Hover a statement to light up that moment on the timeline. |
 
 Three rounds make a game. Each round uses a different liar (random, rule-based, then Claude), in an order that rotates between games, so the three can be compared fairly.

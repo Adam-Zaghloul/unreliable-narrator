@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 64" width="480" height="64" role="img" aria-label="The Unreliable Narrator">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 72" width="560" height="72" role="img" aria-label="The Unreliable Narrator">
   <style>
-    .ink{fill:#1b1a17}.lie{fill:#c23a2e}
-    text{font:600 30px "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;letter-spacing:-.01em}
-    @media (prefers-color-scheme:dark){.ink{fill:#efece6}.lie{fill:#f07163}}
+    .ink{fill:#1f1c19}.red{fill:#cf2e25}
+    text{font:500 38px "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;letter-spacing:-.01em}
+    @media (prefers-color-scheme:dark){.ink{fill:#ece3d1}.red{fill:#ff5e4f}}
   </style>
-  <g transform="translate(0 8)">
-    <path class="ink" d="M7 30c0-8 4-14 11-17l2 4c-4 2-6 5-6 8h5v12H7z"/>
-    <path class="lie" d="M27 30c0-8 4-14 11-17l2 4c-4 2-6 5-6 8h5v12H27z"/>
+  <g transform="translate(2 12) scale(1.2)">
+    <path class="ink" d="M3 30c0-11 5-19 14-23l2.6 4.2C14.4 14 12 17.6 12 21.6h6.4V36H3z"/>
+    <path class="red" d="M26 30c0-11 5-19 14-23l2.6 4.2C37.4 14 35 17.6 35 21.6h6.4V36H26z" transform="translate(1.6 -1.2)"/>
   </g>
-  <text class="ink" x="58" y="43">The Unreliable Narrator</text>
+  <text class="ink" x="76" y="50">The Unreliable Narrator</text>
 </svg>

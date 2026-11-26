@@ -1,8 +1,9 @@
 """Regenerate every screenshot in docs/images from real code paths (no mock-ups).
 
-- reveal-*.png:  a simulated game run through hub.live, rendered by hub.reveal
-- screen-*.png:  the big-screen page (hub.screen) in its demo states
-- social-preview.png: GitHub social card, rendered from HTML in this file
+- reveal-*.png, timeline-*.png:  a simulated game run through hub.live, rendered by hub.reveal
+- screen-*.png:                  the big-screen page (hub.screen) in its demo states
+- social-preview.png:            GitHub social card, in the same print language
+- badge.svg:                     scripts/draw_badge.py
 
 Needs Google Chrome (headless) and Pillow:  python scripts/make_images.py
 """
@@ -20,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from hub import db  # noqa: E402
-from hub.design import base_css, logo_svg  # noqa: E402
+from hub.design import MONO, SERIF, base_css, logo_svg  # noqa: E402
 from hub.live import DEMO, LiveGame  # noqa: E402
 from hub.reveal import build  # noqa: E402
 from hub.screen import page  # noqa: E402
@@ -33,10 +34,11 @@ CHROME = next((p for p in ["/Applications/Google Chrome.app/Contents/MacOS/Googl
               None)
 
 
-def shoot(html: Path, png: Path, w: int, h: int, scale: int = 2, query: str = "") -> None:
+def shoot(html: Path, png: Path, w: int, h: int, scale: int = 2, query: str = "") -> Image.Image:
     subprocess.run([CHROME, "--headless=new", "--hide-scrollbars", "--disable-gpu", f"--force-device-scale-factor={scale}",
                     f"--window-size={w},{h}", f"--screenshot={png}", html.as_uri() + query],
                    check=True, capture_output=True)
+    return Image.open(png)
 
 
 def themed(src: str, theme: str) -> str:
@@ -46,6 +48,15 @@ def themed(src: str, theme: str) -> str:
 def save(img: Image.Image, name: str) -> None:
     img.convert("RGB").save(OUT / name, optimize=True)
     print("wrote", OUT / name)
+
+
+# shows only the surveillance log (and lights up the first lie), for the README strip
+ONLY_LOG = ("<script>let on=false;for(const el of [...document.querySelector('main').children]){"
+            "if(el.id==='log-h')on=true;if(!on&&!el.classList.contains('folio'))el.style.display='none';"
+            "if(el.tagName==='FOOTER'||el.id==='tip')el.style.display='none'}"
+            "document.querySelector('#log-h').style.marginTop='28px';"
+            "const s=[...document.querySelectorAll('.entry')].find(x=>x.querySelector('.stamp.lie'));"
+            "s&&s.dispatchEvent(new Event('mouseenter'));</script></body>")
 
 
 def reveal_images(tmp: Path) -> None:
@@ -59,55 +70,58 @@ def reveal_images(tmp: Path) -> None:
     html = build(con)
     for theme in ("light", "dark"):
         f = tmp / f"reveal-{theme}.html"
-        # show the hover state: light up the first lie on the timeline
-        hl = ("<script>const s=document.querySelector('.st .tag.lie')?.closest('.st');"
-              "s&&s.dispatchEvent(new Event('mouseenter'));</script></body>")
-        f.write_text(themed(html, theme).replace("</body>", hl, 1))
-        png = tmp / f"reveal-{theme}.png"
-        shoot(f, png, 1100, 3200)
-        im = Image.open(png)
-        save(im.crop((0, 0, im.width, 1500)), f"reveal-{theme}.png")
-        # the timeline is the last section: crop from its heading to the last non-background row
-        bg = im.getpixel((5, 5))
-        rows = [y for y in range(im.height) if any(im.getpixel((x, y)) != bg for x in range(0, im.width, 7))]
-        bottom = rows[-1] + 60
-        save(im.crop((0, max(0, bottom - 980), im.width, min(im.height, bottom))), f"timeline-{theme}.png")
+        f.write_text(themed(html, theme))
+        save(shoot(f, tmp / f"reveal-{theme}.png", 1100, 1460), f"reveal-{theme}.png")
+        f2 = tmp / f"log-{theme}.html"
+        f2.write_text(themed(html, theme).replace("</body>", ONLY_LOG, 1))
+        save(shoot(f2, tmp / f"log-{theme}.png", 1100, 545), f"timeline-{theme}.png")
 
 
 def screen_images(tmp: Path) -> None:
     f = tmp / "screen.html"
     f.write_text(themed(page(), "dark"))
     for state in ("play", "meeting", "over"):
-        png = tmp / f"screen-{state}.png"
-        shoot(f, png, 1440, 810, query=f"?demo={state}")
-        save(Image.open(png), f"screen-{state}.png")
+        save(shoot(f, tmp / f"screen-{state}.png", 1440, 810, query=f"?demo={state}"), f"screen-{state}.png")
 
 
-SOCIAL = """<!doctype html><html lang='en' data-theme='dark'><head><meta charset='utf-8'><style>{css}
-body{{width:1280px;height:640px;padding:72px 84px;display:flex;flex-direction:column;justify-content:space-between}}
-h1{{font-size:76px;line-height:1.02;margin:0;font-weight:600}} p{{font-size:28px;margin:18px 0 0;color:var(--muted);max-width:30ch}}
-.card{{display:flex;gap:18px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;
-padding:22px 26px;font-size:30px;width:max-content}} .card .tag{{font-size:16px;padding:4px 12px}}
-.mark{{font-size:24px}} .mark svg{{width:40px;height:40px}}</style></head><body>
-<span class='mark'>{logo}The Unreliable Narrator</span>
-<div><h1 class='serif'>The AI is the traitor.<br>The badges know the truth.</h1>
-<p>An in-person party game. ESP32 badges, a lying narrator, and a reveal.</p></div>
-<div class='card'><span class='tag lie'>Lie</span><span class='serif'>At 3:40, Karim was in the living room.</span></div>
-</body></html>"""
+SOCIAL = """<!doctype html><html lang='en' data-theme='light'><head><meta charset='utf-8'><style>{css}
+body{{width:1280px;height:640px;margin:0;position:relative;overflow:hidden}}
+.wrap{{position:absolute;inset:56px 72px}}
+.top{{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--ink);padding-bottom:14px}}
+.brand{{display:inline-flex;align-items:center;gap:14px;font:600 24px {serif}}}
+h1{{font:400 84px/1.02 {serif};letter-spacing:-.025em;margin:58px 0 0}}
+.line{{font:400 40px/1.3 {serif};margin-top:34px}}
+.line del{{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:3px;color:var(--muted)}}
+.line ins{{text-decoration:none;color:var(--red);font-style:italic}}
+.line .stamp{{font-size:18px;padding:10px 11px 9px 14px;margin-left:22px;vertical-align:8px}}
+.foot{{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;border-top:1px solid var(--rule);
+  padding-top:12px;font:15px {mono};letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}}
+.reg{{position:absolute;width:26px;height:26px}}
+.reg::before,.reg::after{{content:"";position:absolute;background:var(--ink)}}
+.reg::before{{left:12px;top:0;width:1.2px;height:26px}}.reg::after{{top:12px;left:0;height:1.2px;width:26px}}
+.reg i{{position:absolute;inset:6px;border:1.2px solid var(--ink);border-radius:50%}}
+</style></head><body>
+<span class='reg' style='left:20px;top:20px'><i></i></span><span class='reg' style='right:20px;top:20px'><i></i></span>
+<span class='reg' style='left:20px;bottom:20px'><i></i></span><span class='reg' style='right:20px;bottom:20px'><i></i></span>
+<div class='wrap'>
+<div class='top'><span class='brand'>{logo}The Unreliable Narrator</span><span class='caps muted'>A party game · ESP32 · Claude</span></div>
+<h1>The AI is the traitor.<br>The badges know the truth.</h1>
+<div class='line'>&ldquo;At 3:40, Karim was <del>in the living room</del> <ins>in the kitchen</ins>.&rdquo;<span class='stamp lie'>Lie</span></div>
+<div class='foot'><span>Badges on · phones away</span><span>Every lie corrected in red</span></div>
+</div></body></html>"""
 
 
 def social(tmp: Path) -> None:
     f = tmp / "social.html"
-    f.write_text(SOCIAL.format(css=base_css(), logo=logo_svg(40)))
-    png = tmp / "social.png"
-    shoot(f, png, 1280, 640, scale=1)
-    save(Image.open(png), "social-preview.png")
+    f.write_text(SOCIAL.format(css=base_css(), logo=logo_svg(30), serif=SERIF, mono=MONO))
+    save(shoot(f, tmp / "social.png", 1280, 640, scale=1), "social-preview.png")
 
 
 if __name__ == "__main__":
     if not CHROME:
         sys.exit("Google Chrome or Chromium is needed for headless screenshots.")
     OUT.mkdir(parents=True, exist_ok=True)
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "draw_badge.py")], check=True)
     with tempfile.TemporaryDirectory() as t:
         tmp = Path(t)
         reveal_images(tmp)

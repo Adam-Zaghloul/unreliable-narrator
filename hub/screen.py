@@ -14,34 +14,40 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from .design import base_css, logo_svg
+from .design import MONO, SERIF, base_css, logo_svg
 
-CSS = """
-html,body{height:100%}
-body{display:flex;flex-direction:column;overflow:hidden}
-.bar{display:flex;justify-content:space-between;align-items:center;padding:22px 36px;font-size:18px}
-.stage{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 7vw 6vh}
-.eyebrow{font-size:clamp(14px,1.6vw,22px);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:650;
-  margin-bottom:2.2vh}
-.timer{font-size:clamp(90px,19vw,260px);line-height:.95;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
-.hint{font-size:clamp(20px,2.4vw,34px);color:var(--muted);max-width:30ch;margin-top:3vh;line-height:1.35}
-.quote{font-size:clamp(36px,5.6vw,84px);line-height:1.12;max-width:20ch;font-weight:500}
-.quote::before{content:"\\201C";color:var(--lie);margin-left:-.45em;padding-right:.05em}
-.quote::after{content:"\\201D";color:var(--lie)}
-.vote{display:flex;align-items:center;gap:3vw;margin-top:6vh;flex-wrap:wrap}
-.track{flex:1;min-width:240px;height:10px;border-radius:99px;background:var(--line);overflow:hidden;max-width:560px}
-.track i{display:block;height:100%;background:var(--ink);border-radius:99px;transition:width .5s linear}
-.count{font-size:clamp(18px,2vw,28px);font-variant-numeric:tabular-nums}
-.dots{display:flex;gap:10px}
-.dots b{width:18px;height:18px;border-radius:50%;border:2px solid var(--muted);transition:background .2s}
-.dots b.on{background:var(--ink);border-color:var(--ink)}
-.keys{display:flex;gap:16px;margin-top:4vh;font-size:clamp(16px,1.6vw,22px)}
-.key{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border-radius:14px;border:1px solid var(--line);
-  background:var(--surface)}
-.key i{width:22px;height:22px;border-radius:50%;display:inline-block}
-.buzz{position:fixed;inset:auto 36px 30px auto;font-size:18px;padding:10px 16px;border-radius:12px;background:var(--surface);
-  border:1px solid var(--line);opacity:0;transition:opacity .3s}
-.buzz.on{opacity:1}
+CSS = f"""
+html,body{{height:100%}}
+body{{display:flex;flex-direction:column;overflow:hidden}}
+.bar{{display:flex;justify-content:space-between;align-items:center;margin:26px 44px 0;padding-bottom:14px;
+  border-bottom:1.5px solid var(--ink)}}
+.bar .brand{{display:inline-flex;align-items:center;gap:14px;font:600 20px {SERIF}}}
+.stage{{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 8vw 7vh}}
+.eyebrow{{display:flex;align-items:center;gap:18px;font:clamp(13px,1.3vw,18px) {MONO};letter-spacing:.2em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:3.4vh}}
+.eyebrow b{{color:var(--red);font-weight:600}}
+.eyebrow::after{{content:"";width:12vw;border-top:1px solid var(--rule)}}
+.timer{{font:400 clamp(110px,22vw,300px)/.86 {SERIF};letter-spacing:-.04em}}
+.timer small{{font-size:.32em;letter-spacing:0;color:var(--muted);margin-left:.15em}}
+.big{{font:400 clamp(60px,9vw,136px)/1 {SERIF};letter-spacing:-.025em}}
+.big i{{color:var(--red)}}
+.hint{{font:italic clamp(22px,2.4vw,34px)/1.35 {SERIF};color:var(--muted);max-width:32ch;margin-top:4.5vh}}
+.quote{{font:400 clamp(40px,5.8vw,92px)/1.1 {SERIF};letter-spacing:-.01em;max-width:19ch;text-indent:-.24em}}
+.quote::before{{content:"\\201C";color:var(--red)}}
+.quote::after{{content:"\\201D";color:var(--red)}}
+.vote{{display:grid;grid-template-columns:minmax(260px,560px) auto auto;align-items:center;gap:3.2vw;margin-top:6.5vh}}
+.ruler{{position:relative;height:22px;border-bottom:1.5px solid var(--ink);
+  background:repeating-linear-gradient(90deg,var(--ink) 0 1.5px,transparent 1.5px calc(100% / 15)) bottom/100% 9px no-repeat}}
+.ruler i{{position:absolute;left:0;bottom:-1.5px;height:6px;background:var(--red);transition:width .5s linear}}
+.count{{font:clamp(22px,2.2vw,32px) {MONO};font-variant-numeric:tabular-nums}}
+.dots{{display:flex;gap:12px}}
+.dots b{{width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--ink);transition:background .2s}}
+.dots b.on{{background:var(--ink)}}
+.keys{{display:flex;gap:26px;margin-top:5vh;align-items:center;font:clamp(14px,1.3vw,18px) {MONO};color:var(--muted)}}
+.keys .stamp{{font-size:clamp(14px,1.3vw,19px);padding:9px 10px 8px 13px;margin-right:10px}}
+.buzz{{position:fixed;right:44px;bottom:34px;opacity:0;transition:opacity .3s}}
+.buzz.on{{opacity:1}}
+.buzz .stamp{{font-size:16px;padding:10px 11px 9px 14px;color:var(--red)}}
 """
 
 PAGE_JS = """
@@ -57,23 +63,23 @@ let st={phase:'idle'},recv=performance.now();
 function render(){
   const left=(st.seconds_left??0)-(performance.now()-recv)/1000;
   const h=[];
-  if(st.phase==='idle'){h.push(`<div class="eyebrow">Get ready</div><div class="timer serif" style="font-size:clamp(56px,9vw,130px)">Badges on.</div>
+  if(st.phase==='idle'){h.push(`<div class="eyebrow">Before we begin</div><div class="big">Badges on.<br>Phones <i>away.</i></div>
     <div class="hint">The game starts when the host says go.</div>`)}
-  if(st.phase==='play'){h.push(`<div class="eyebrow">Round ${st.round} of ${st.rounds} · walk around</div>
+  if(st.phase==='play'){h.push(`<div class="eyebrow"><b>Round ${st.round}</b> of ${st.rounds} &nbsp;·&nbsp; walk around</div>
     <div class="timer">${mm(left)}</div>
-    <div class="hint">When your badge buzzes, take a mental snapshot: who is in the room with you?</div>`)}
+    <div class="hint">When your badge buzzes, take a mental photograph: who is in the room with you?</div>`)}
   if(st.phase==='meeting'){
     const pct=Math.max(0,Math.min(100,100*left/(st.vote_seconds||15)));
     const dots=Array.from({length:st.players},(_,i)=>`<b class="${i<st.voted?'on':''}"></b>`).join('');
-    h.push(`<div class="eyebrow">Meeting · statement ${st.index} of ${st.count}</div>
-      <div class="quote serif">${esc(st.text)}</div>
-      <div class="vote"><div class="track"><i style="width:${pct}%"></i></div>
+    h.push(`<div class="eyebrow"><b>Meeting</b> &nbsp;·&nbsp; statement ${st.index} of ${st.count}</div>
+      <div class="quote">${esc(st.text)}</div>
+      <div class="vote"><div class="ruler"><i style="width:${pct}%"></i></div>
         <span class="count">${mm(left)}</span><span class="dots" aria-label="${st.voted} of ${st.players} voted">${dots}</span></div>
-      <div class="keys"><span class="key"><i style="background:var(--true)"></i>Left button · TRUE</span>
-        <span class="key"><i style="background:var(--lie)"></i>Right button · LIE</span></div>`)}
-  if(st.phase==='over'){h.push(`<div class="eyebrow">That's the game</div>
-    <div class="timer serif" style="font-size:clamp(56px,9vw,130px)">Now, the truth.</div>
-    <div class="hint">The reveal is open on the host's laptop: every lie, and who fell for it.</div>`)}
+      <div class="keys"><span><span class="stamp true">True</span>left button</span>
+        <span><span class="stamp lie">Lie</span>right button</span></div>`)}
+  if(st.phase==='over'){h.push(`<div class="eyebrow">That&rsquo;s the game</div>
+    <div class="big">Now, <i>the truth.</i></div>
+    <div class="hint">The reveal is on the host&rsquo;s laptop: every lie, corrected, and who fell for it.</div>`)}
   $('.stage').innerHTML=h.join('');
   $('.buzz').classList.toggle('on',!!st.buzzed&&st.phase==='play');
 }
@@ -87,9 +93,9 @@ def page() -> str:
     return (f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' "
             f"content='width=device-width,initial-scale=1'><title>The Unreliable Narrator</title>"
             f"<style>{base_css()}{CSS}</style></head><body>"
-            f"<div class='bar'><span class='mark'>{logo_svg()}The Unreliable Narrator</span>"
-            f"<span class='muted'>The narrator is lying to you. Some of the time.</span></div>"
-            f"<div class='stage'></div><div class='buzz'>A badge just buzzed</div>"
+            f"<div class='bar'><span class='brand'>{logo_svg(24)}The Unreliable Narrator</span>"
+            f"<span class='caps muted'>The narrator is lying to you. Some of the time.</span></div>"
+            f"<div class='stage'></div><div class='buzz'><span class='stamp'>A badge just buzzed</span></div>"
             f"<script>{PAGE_JS}</script></body></html>")
 
 
