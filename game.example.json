@@ -1,0 +1,12 @@
+{
+  "players": {"1": "Sara", "2": "Karim", "3": "Lina", "4": "Omar", "5": "Maya", "6": "Theo"},
+  "zones": {"1": "kitchen", "2": "living room", "3": "hallway", "4": "balcony"},
+  "rounds": 3,
+  "round_minutes": 5,
+  "statements_per_round": 4,
+  "lies_per_round": 2,
+  "vote_seconds": 15,
+  "witness_ping_every_s": 45,
+  "session": 0,
+  "speak": true
+}

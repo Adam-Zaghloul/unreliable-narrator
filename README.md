@@ -6,8 +6,8 @@ Players walk between rooms wearing cheap ESP32 badges. The narrator announces wh
 
 Nobody has to play the villain, and nobody needs a phone. It also produces data on a question that has so far been studied mostly in text-only games: **how well do people catch a lying AI when they can check its claims against what physically happened?**
 
-> **Status (2026-11-26): week 1, simulator only.**
-> - The hub runs end to end against simulated players.
+> **Status (2026-11-26): all the software is ready, but nothing has been tested on hardware or with people.**
+> - The full live game loop runs end to end against a **fake gateway**: rounds, badge buzzes, button votes, reveal page and dataset export.
 > - The firmware **compiles** for ESP32-C3 but has **not been flashed or bench-tested**.
 > - No real game has been played yet.
 > - Every number below comes from the simulator and is a development check, not a result about people.
@@ -16,13 +16,16 @@ Nobody has to play the villain, and nobody needs a phone. It also produces data 
 
 ```sh
 uv venv -p python3.12 .venv && uv pip install -p .venv anthropic pytest
-.venv/bin/python -m pytest -q                       # 18 tests
-.venv/bin/python -m hub.game --seed 3               # one simulated game, then the reveal
-.venv/bin/python -m hub.game --liar heuristic       # rule-based "strategic" liar, no AI
-.venv/bin/python -m hub.game --compare 50           # template vs heuristic liar over 50 seeds
-.venv/bin/python -m hub.game --liar llm --seed 3    # Claude picks the lies (billed, see Cost)
-.venv/bin/python -m hub.game --speak                # macOS reads each statement aloud
+.venv/bin/python -m pytest -q                        # 24 tests
+.venv/bin/python -m hub.live --sim                   # full live game vs a fake gateway, opens the reveal page
+.venv/bin/python -m hub.game --seed 3                # quick text-only game
+.venv/bin/python -m hub.game --compare 50            # template vs heuristic liar over 50 seeds
+.venv/bin/python -m evals.e4_safety                  # red-team, must print 0 violations
 ```
+
+Running a real game night (setup, rules and consent card) is covered in [docs/HOSTING.md](docs/HOSTING.md).
+
+**Using Claude as the liar:** the `llm` liar needs Anthropic credentials (`ANTHROPIC_API_KEY`, or `ant auth login`). Without them, the round falls back to the template liar. Those statements are marked `template-fill` and excluded from the E3 analysis, so the AI never gets credit for statements it didn't make.
 
 ## How it works
 
@@ -36,7 +39,12 @@ uv venv -p python3.12 .venv && uv pip install -p .venv anthropic pytest
                                        liars.py     template / heuristic liars (baselines)
                                        llm.py       Claude proposes lies as structured JSON
                                        validator.py recomputes every label, renders the spoken text
-                                       game.py      rounds, votes, reveal
+                                       rounds.py    one round: liar -> validator -> fixed lie/truth mix
+                                       live.py      real game: play phase, witness buzzes, button votes
+                                       reveal.py    self-contained HTML reveal page
+                                       export.py    anonymised JSONL dataset (no raw RSSI)
+                                       walk.py      scripted-walk recorder for the real E1
+                                       game.py      quick simulator-only game + liar comparison
 ```
 
 **Design rule: the AI never decides what is true.**
@@ -62,8 +70,10 @@ The narrator may only use a fact that is confident (≥ 0.8) **and** held for at
 | E1 zone accuracy (`python -m evals.e1_zone_accuracy`) | Accuracy of the facts the narrator may use, and how many player-windows it can use (coverage), at different noise levels | 99.8–99.9% accurate. Coverage falls from 70% to 39% as noise rises from 2 to 10 dB with heavy body shadowing |
 | E2 validator (`python -m evals.e2_validator`) | 300 logs. Accepted lies are really lies, accepted truths are really true, and adversarial claims are rejected | 2344/2344 lies correct. **1438/1439** truths correct: the one miss is a truth-engine error at a room boundary, not a validator bug. 30000/30000 adversarial claims rejected |
 | Liar comparison (`python -m hub.game --compare 50`) | Share of lies believed, and share of true statements rejected | Template 37% / 23%, heuristic 47% / 22%. **Circular:** the simulated voters are built to miss lies told about moments nobody witnessed, which is exactly what the heuristic exploits |
-| E3 headline (needs real players) | Template-random vs heuristic vs LLM lies, judged by real people | Not run. The LLM liar has to beat the **heuristic**, not just the random liar, or the AI is decorative and this README will say so |
-| E4 safety red-team | 40 bait scenarios | Not built yet |
+| E1 bench (`python -m hub.walk`, then `python -m evals.e1_bench`) | The same check on real hardware, against a baseline that just takes the strongest reading | Ready to run; needs hardware |
+| E3 headline (`python -m evals.e3_analysis sessions/*.db`) | Template vs heuristic vs LLM lies, judged by real people. Rounds are counterbalanced, and confidence intervals come from resampling whole sessions | Pipeline checked on 6 simulated sessions only. The LLM liar has to beat the **heuristic**, not just the random liar, or the AI is decorative and this README will say so |
+| E4 safety (`python -m evals.e4_safety`) | 41 attacks: banned claim types, injected names, invented places, mislabelled lies, HTML in names | **0 violations** |
+| E5 models (`python -m evals.e5_models --yes`) | Validator pass rate, latency and cost per model | Not run (billed) |
 
 Details and run notes: [evals/results.md](evals/results.md).
 
@@ -89,4 +99,5 @@ Firmware is in [firmware/](firmware/). It compiles with Arduino-ESP32 core 3.3.1
 - Body shadowing and room boundaries are the main sources of error in real RSSI. The simulator models them only roughly.
 - The simulated voters are crude, so they can't tell you whether one liar is better than another. Only real players can.
 - Badges are named `P<id>` until `players.json` maps them to names.
-- Not built yet: the live hardware game loop (`ingest.py` writes pings, but `game.py` still reads from the simulator), the reveal web page, witness pings over the gateway, and the safety red-team set.
+- The gateway, badge buttons and buzz motor have only been tested through the fake gateway.
+- The Ctrl+C safe word ends the game. There is no pause-and-resume.

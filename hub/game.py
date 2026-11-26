@@ -16,25 +16,14 @@ import sys
 from sim.world import SimVoter, pick_witness_pings, simulate
 
 from . import db
-from .liars import HeuristicLiar, TemplateLiar
+from .liars import TemplateLiar
 from .model import GameResult, Vote
-from .truth import Truth, estimate_zones, window_of
-from .validator import accept
+from .rounds import make_liar, round_statements, truth_so_far
+from .truth import estimate_zones
 
 ROUNDS = 3
 STATEMENTS_PER_ROUND = 4
 LIES_PER_ROUND = 2
-
-
-def make_liar(kind: str, con, seed: int):
-    if kind == "template":
-        return TemplateLiar(seed)
-    if kind == "heuristic":
-        return HeuristicLiar(seed)
-    if kind == "llm":
-        from .llm import LLMLiar
-        return LLMLiar(con=con, seed=seed)
-    raise SystemExit(f"unknown liar {kind!r}")
 
 
 def play(seed: int = 0, liar_kind: str = "template", con=None, speak: bool = False, quiet: bool = False) -> GameResult:
@@ -53,32 +42,12 @@ def play(seed: int = 0, liar_kind: str = "template", con=None, speak: bool = Fal
     history: list[dict] = []
     round_len_ms = world.duration_s * 1000 // ROUNDS
 
+    used: set[str] = set()
     for rnd in range(1, ROUNDS + 1):
-        now_ms = rnd * round_len_ms
-        truth = Truth(estimate_zones([p for p in world.pings if p.t_ms < now_ms], world.zone_of_beacon))
-        # only talk about the past, and not the last window (it may still be changing)
-        truth.windows = [w for w in truth.windows if w < window_of(now_ms) - 1]
-        zones = set(world.zones)
-        accepted, rejected = accept(liar.propose(truth, world.zones, STATEMENTS_PER_ROUND, LIES_PER_ROUND, history),
-                                    truth, zones, liar.name)
-        for c, why in rejected:
-            db.save_rejected(con, rnd, liar.name, c, why)
-        # keep the lie/truth mix fixed so liars are compared fairly; top up from the template liar
-        lies = [s for s in accepted if s.claim.is_lie][:LIES_PER_ROUND]
-        truths = [s for s in accepted if not s.claim.is_lie][: STATEMENTS_PER_ROUND - LIES_PER_ROUND]
-        tries = 0
-        while (len(lies) < LIES_PER_ROUND or len(truths) < STATEMENTS_PER_ROUND - LIES_PER_ROUND) and tries < 20:
-            tries += 1
-            extra, _ = accept(fill.propose(truth, world.zones, 2, 1), truth, zones, "template-fill")
-            for s in extra:
-                bucket = lies if s.claim.is_lie else truths
-                cap = LIES_PER_ROUND if s.claim.is_lie else STATEMENTS_PER_ROUND - LIES_PER_ROUND
-                if len(bucket) < cap and all(s.text != o.text for o in lies + truths):
-                    bucket.append(s)
-        round_statements = lies + truths
-        rng.shuffle(round_statements)
-
-        for st in round_statements:
+        truth = truth_so_far(world.pings, world.zone_of_beacon, rnd * round_len_ms)
+        statements = round_statements(rnd, truth, world.zones, liar, fill, con, STATEMENTS_PER_ROUND,
+                                      LIES_PER_ROUND, history, used, rng)
+        for st in statements:
             idx = len(result.statements)
             result.statements.append(st)
             db.save_statement(con, idx, rnd, st)

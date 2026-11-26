@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS zone_estimates (player TEXT, window INTEGER, zone TEX
 CREATE TABLE IF NOT EXISTS statements (idx INTEGER PRIMARY KEY, round INTEGER, source TEXT, text TEXT,
     claim_type TEXT, players TEXT, zone TEXT, window INTEGER, is_lie INTEGER, strategy TEXT);
 CREATE TABLE IF NOT EXISTS rejected (round INTEGER, source TEXT, claim TEXT, reason TEXT);
+CREATE TABLE IF NOT EXISTS rounds (round INTEGER PRIMARY KEY, arm TEXT);
 CREATE TABLE IF NOT EXISTS votes (voter TEXT, statement_idx INTEGER, believes_true INTEGER);
 CREATE TABLE IF NOT EXISTS buzzes (player TEXT, window INTEGER);
 CREATE TABLE IF NOT EXISTS llm_calls (t REAL, model TEXT, input_tokens INTEGER, output_tokens INTEGER,

@@ -38,11 +38,11 @@ def test_parses_claims_and_logs_cost():
     assert row[0] == "claude-haiku-5-5" and row[1] == 1000 and row[2] > 0 and row[3] == 1
 
 
-def test_refusal_falls_back_to_template():
+def test_refusal_returns_nothing_so_round_is_template_filled():
     w, t = world_truth()
     con = db.connect()
     claims = LLMLiar(con=con, client=FakeClient({}, stop_reason="refusal")).propose(t, w.zones, 4, 2)
-    assert len(claims) == 4
+    assert claims == []
     assert con.execute("SELECT error FROM llm_calls").fetchone()[0] == "refusal"
 
 

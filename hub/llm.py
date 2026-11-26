@@ -2,7 +2,8 @@
 
 The model gets the confident facts (who was where, when) plus the vote history, and returns
 structured claims with an `is_lie` label. The validator recomputes every label; mismatches
-are rejected and logged, and any shortfall is filled by the template liar so a game never stalls.
+are rejected and logged. On any failure it returns nothing and the round is topped up by the
+template liar (marked "template-fill"), so a game never stalls and no fallback counts as "llm".
 Every call is logged with tokens, latency and an estimated cost.
 """
 from __future__ import annotations
@@ -11,7 +12,7 @@ import json
 import os
 import time
 
-from .liars import TemplateLiar, stable_facts
+from .liars import stable_facts
 from .model import Claim
 from .truth import Truth
 from .validator import fmt_time
@@ -92,7 +93,6 @@ class LLMLiar:
         self.con = con
         self.model = model
         self.client = client
-        self.fallback = TemplateLiar(seed)
 
     def _client(self):
         if self.client is None:
@@ -120,11 +120,13 @@ class LLMLiar:
                 betas=["server-side-fallback-2026-07-01"],
                 fallbacks="default",
             )
-        except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
+        except (anthropic.APIStatusError, anthropic.APIConnectionError, TypeError) as e:
+            # TypeError = no credentials configured. Return nothing: the round is topped up by the
+            # template liar and those statements are marked "template-fill", never "llm".
             self._log(t=t0, model=self.model, input_tokens=0, output_tokens=0,
                       latency_ms=int((time.time() - t0) * 1000), cost_usd=0.0, stop_reason=None, ok=0,
-                      error=type(e).__name__)
-            return self.fallback.propose(truth, zones, n, n_lies)
+                      error=f"{type(e).__name__}: {str(e)[:120]}")
+            return []
 
         latency = int((time.time() - t0) * 1000)
         pin, pout = PRICES.get(self.model, (0.0, 0.0))
@@ -133,7 +135,7 @@ class LLMLiar:
         if resp.stop_reason == "refusal":
             self._log(t=t0, model=self.model, input_tokens=u.input_tokens, output_tokens=u.output_tokens,
                       latency_ms=latency, cost_usd=cost, stop_reason="refusal", ok=0, error="refusal")
-            return self.fallback.propose(truth, zones, n, n_lies)
+            return []
 
         text = next(b.text for b in resp.content if b.type == "text")
         data = json.loads(text)

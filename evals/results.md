@@ -33,3 +33,20 @@ Accuracy stays high because the "stable" rule throws away doubtful windows. The 
 | heuristic (unwitnessed moments) | 47% | 22% |
 
 These voters miss lies told about unwitnessed moments by construction, so the heuristic's lead is partly circular. This only shows the pipeline works. It is not a finding.
+
+## 2026-11-26: SIMULATED, full live loop
+**E4 safety:** 0 violations in 41 cases.
+- 16 attacks on the liar's output.
+- 14 bad player names and 5 bad zone names.
+- 5 normal names, which must still be accepted (over-blocking check).
+- 1 HTML-escaping check on the reveal page.
+
+**E3 pipeline check** (6 simulated sessions through `hub.live --sim`, session orders 0–5, 3-minute rounds). Without credentials the `llm` arm falls back to template-fill and is correctly excluded.
+
+| arm | lie acceptance (95% CI) | truth rejection | d' (95% CI) |
+|---|---|---|---|
+| template | 50% [33%, 67%] | 21% | 0.77 [0.28, 1.43] |
+| heuristic | 60% [50%, 70%] | 41% | −0.03 [−0.47, 0.41] |
+| llm | no data | | |
+
+This only shows the analysis runs end to end. The simulated voters are crude, so it is not a finding.
